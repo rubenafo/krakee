@@ -13,9 +13,8 @@ class Krapanda:
             self.__privateApi = PrivateApi(self.kapi)
         else:
             self.__privateApi = None
-        self.__publicApi = PublicApi(self.kapi)
-        self.cache = {}
-        self.cache['assetPairs'] = self.public().assetPairs()
+        self.__publicApi = PublicApi(self.kapi, self.cache)
+        self.cache = {'assetPairs': self.public().assetPairs()}
 
     def public(self) -> PublicApi:
         return self.__publicApi

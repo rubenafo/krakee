@@ -3,8 +3,9 @@ from pandas import DataFrame
 
 class PublicApi:
 
-    def __init__(self, kapi):
+    def __init__(self, kapi, cache: dict):
         self.kapi = kapi
+        self.cache = cache
 
     def assets(self) -> DataFrame:
         df = self.kapi.query_public("Assets")
@@ -19,6 +20,7 @@ class PublicApi:
         return DataFrame(df['result'])
 
     def ohlc(self, pair, interval: str, since=None) -> DataFrame:
+        assert (pair in list(self.cache['assetPairs'].columns)), "Invalid pair: {}".format(pair)
         valid_intervals = {"1min":1, "5min":5, "15min":15, "30min": 30, "1h":60, "4h":240, "1d":1440, "7d":10080, "15d":21600}
         assert (interval in valid_intervals)
         data = "pair={}&interval={}".format(pair, valid_intervals[interval])
@@ -31,6 +33,7 @@ class PublicApi:
         return ohlcdata, last
 
     def orderBook(self, pair, count=None) -> DataFrame:
+        assert (pair in list(self.cache['assetPairs'].columns)), "Invalid pair: {}".format(pair)
         data = "pair={}".format(pair)
         if count:
             data = "{}&count={}".format(data, count)
@@ -44,6 +47,7 @@ class PublicApi:
         return asksDf.append(bidsDf, ignore_index=True)
 
     def trades(self, pair, since=None) -> DataFrame:
+        assert (pair in list(self.cache['assetPairs'].columns)), "Invalid pair: {}".format(pair)
         data = "pair={}".format(pair)
         if since:
             data = "{}&since={}".format(data, since)

@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="krapanda",
+    name="krakee",
     version="0.5",
     author="Ruben Afonso",
     author_email="rbfrancos@gmail.com",
     description="Kraken Exchange API with a thin pandas Dataframe wrap",
-    url="https://github.com/rubenafo/krapanda",
+    url="https://github.com/rubenafo/krakee",
     keywords = ["kraken", "cryptocurrencies", "exchange", "python", "bitcoin"],
     packages=find_packages(),
     classifiers=[

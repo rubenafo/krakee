@@ -1,13 +1,14 @@
 import logging
 import logging as logger
 from functools import wraps
-from time import sleep
 
 import krakenex
 from pandas import DataFrame
 from pykrakenapi import KrakenAPI
 
+from krakee import OrderBuilder
 from krakee.api import validators
+
 
 # @cache decorator to cache responses
 def cached(*args, **kwargs):
@@ -55,8 +56,6 @@ class Krakee:
             self.kapi = KrakenAPI(krakenex.API())
             logger.info("Auth token not provided, only public API available")
         self.assetPairs()
-        sleep(1)
-        self.assets()
 
     @cached(always=True)
     def assets(self) -> DataFrame: return self.kapi.get_asset_info().transpose()
@@ -65,34 +64,44 @@ class Krakee:
     def assetPairs(self) -> DataFrame: return self.kapi.get_tradable_asset_pairs().transpose()
 
     @cached
-    def ticker(self, *pairs) -> DataFrame:
-        for pair in pairs:
-            assert (pair in list(self.cache['assetPairs'].columns)), "Invalid pair: {}".format(pair)
+    def tickers(self, *pairs) -> DataFrame:
+        [validators.asset_pair(self, pair) for pair in pairs]
         return self.kapi.get_ticker_information(",".join(pairs)).transpose()
 
     @cached
-    def ohlc(self, pair, interval: str, since=None) -> DataFrame:
-        validators.asset_pair (pair, self)
+    def ohlc(self, pair, interval: str = "1min", since=None) -> DataFrame:
+        validators.asset_pair (self, pair)
         intervals = {"1min": 1, "5min": 5, "15min": 15, "30min": 30, "1h": 60, "4h": 240, "1d": 1440, "7d": 10080, "15d": 21600}
         validators.assert_interval(interval, intervals)
-        return self.kapi.get_ohlc_data(pair, intervals[interval], since)
+        return self.kapi.get_ohlc_data(pair, intervals, since)
+
 
     @cached
     def orderBook(self, pair, count=None) -> (DataFrame, DataFrame):
-        validators.asset_pair(pair, self)
+        validators.asset_pair(self, pair)
         return self.kapi.get_order_book(pair, count)
 
     @cached
     def trades(self, pair, since=None) -> DataFrame:
-        validators.asset_pair(pair, self)
+        validators.asset_pair(self, pair)
         return self.kapi.get_recent_trades (pair, since)
 
     @cached
     def spread(self, pair, since=None) -> DataFrame:
-        validators.asset_pair(pair, self)
+        validators.asset_pair(self, pair)
         return self.kapi.get_recent_spread_data (pair, since)
 
     # Private API
+
+    def addOrder (self, order_builder: OrderBuilder):
+        return self.kapi.api.query_private("AddTrade", order_builder.build())
+
+    def balance(self): return self.kapi.get_account_balance()
+
+    def tradeBalance (self): return self.kapi.get_trade_balance()
+
+    def openOrders (self): return self.kapi.get_open_orders()
+    def closedOrders (self): return self.kapi.get_closed_orders()
 
 logging.basicConfig(level=logging.INFO)
 k = Krakee("/home/tatil/.kr_r", cached=True)

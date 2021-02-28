@@ -63,6 +63,8 @@ class OrderBuilder:
     def build (self):
         assert (self.order['pair']), "Pair required"
         assert (self.order['ordertype'] != 'market' or self.order['price']), "Price required for no market order type"
+        if self.order['ordertype'] in ["stop-loss-limit", "take-profit-limit"]:
+            assert (self.order['price'] and self.order['price2']), "{} requires price and price2".format(self.order['ordertype'])
         assert(self.order['volume']), "Volume required"
         assert (self.order['type']), "Buy/sell type required"
         return self.order

@@ -1,5 +1,5 @@
 
-def asset_pair (pair, krakee):
+def asset_pair (krakee, pair):
     assert (pair in list(krakee.cache['assetPairs'].columns)), "Invalid pair: {}".format(pair)
 
 def assert_interval (interval, intervals):

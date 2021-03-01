@@ -1,8 +1,8 @@
-import logging
 import logging as logger
 from functools import wraps
 
 import krakenex
+import pandas
 from pandas import DataFrame
 from pykrakenapi import KrakenAPI
 
@@ -27,7 +27,7 @@ def cached(*args, **kwargs):
         def wrapper(self, *args, **kwargs):
             func_name = func.__name__
             cachedValue = None
-            cachedId = "_".join([func_name, *args])
+            cachedId = "_".join([func_name])
             if self.is_cached or always:
                 if cachedId in self.cache:
                     cachedValue = self.cache[cachedId]
@@ -43,14 +43,14 @@ def cached(*args, **kwargs):
 
 class Krakee:
 
-    def __init__(self, authfile=None, cached=False):
+    def __init__(self, authfile=None, full_caching=False):
         self.cache = {}
-        self.is_cached = cached
+        self.is_cached = full_caching
         if authfile:
             with open(authfile, 'r') as f:
                 public_key = f.readline().strip()
                 secret_key = f.readline().strip()
-                self.kapi = KrakenAPI(krakenex.API(public_key, secret_key))
+                self.kapi = KrakenAPI(krakenex.API(public_key, secret_key), crl_sleep=2)
                 logger.info("Auth keys successfully loaded from {}".format(authfile))
         else:
             self.kapi = KrakenAPI(krakenex.API())
@@ -64,17 +64,19 @@ class Krakee:
     def assetPairs(self) -> DataFrame: return self.kapi.get_tradable_asset_pairs().transpose()
 
     @cached
-    def tickers(self, *pairs) -> DataFrame:
+    def tickers(self, pairs) -> DataFrame:
         [validators.asset_pair(self, pair) for pair in pairs]
-        return self.kapi.get_ticker_information(",".join(pairs)).transpose()
+        assetList = [pairs[n:n + 9] for n in range(0, len(pairs), 9)]
+        print ("Requesting {} set of tickers, it will take aprox. {}s".format(len(assetList), len(assetList)-1*5))
+        tickers = [self.kapi.get_ticker_information(",".join(assets)) for assets in assetList]
+        return pandas.concat(tickers).transpose()
 
     @cached
     def ohlc(self, pair, interval: str = "1min", since=None) -> DataFrame:
         validators.asset_pair (self, pair)
         intervals = {"1min": 1, "5min": 5, "15min": 15, "30min": 30, "1h": 60, "4h": 240, "1d": 1440, "7d": 10080, "15d": 21600}
         validators.assert_interval(interval, intervals)
-        return self.kapi.get_ohlc_data(pair, intervals, since)
-
+        return self.kapi.get_ohlc_data(pair, intervals[interval], since)
 
     @cached
     def orderBook(self, pair, count=None) -> (DataFrame, DataFrame):
@@ -103,5 +105,22 @@ class Krakee:
     def openOrders (self): return self.kapi.get_open_orders()
     def closedOrders (self): return self.kapi.get_closed_orders()
 
-logging.basicConfig(level=logging.INFO)
-k = Krakee("/home/tatil/.kr_r", cached=True)
+    # Extras
+
+    """
+    Returns asset pairs with given quote currency. E.g. XXBTUSD quote is 'USD'
+    
+    From the whole set of asset pairs, filters the ones with given quote currency.
+    
+    Parameters
+    ----------
+    currency: the currency to look for
+ 
+    """
+    def assetPairsByQuoteCurrency (self, currency):
+        ap =  self.assetPairs()
+        currencies = set(ap.loc['quote'])
+        assert (currency in currencies), "currency must be one of {}".format(currencies)
+        return ap.loc[:, ap.loc['quote'] == currency]
+
+k = Krakee()

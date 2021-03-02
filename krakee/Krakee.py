@@ -1,3 +1,4 @@
+import logging
 import logging as logger
 from functools import wraps
 
@@ -31,7 +32,7 @@ def cached(*args, **kwargs):
             if self.is_cached or always:
                 if cachedId in self.cache:
                     cachedValue = self.cache[cachedId]
-                    logger.info ("Retrieving {}() from cache...".format(func_name))
+                    logger.info ("Cache::retrieving {}() from cache...".format(func_name))
             if cachedValue is None:
                 cachedValue = func(self, *args, **kwargs)
                 if self.cache or always:
@@ -53,33 +54,49 @@ class Krakee:
                 self.kapi = KrakenAPI(krakenex.API(public_key, secret_key), crl_sleep=2)
                 logger.info("Auth keys successfully loaded from {}".format(authfile))
         else:
-            self.kapi = KrakenAPI(krakenex.API())
+            self.kapi = KrakenAPI(krakenex.API(), crl_sleep=2)
             logger.info("Auth token not provided, only public API available")
-        self.assetPairs()
+        self.asset_pairs()
 
     @cached(always=True)
     def assets(self) -> DataFrame: return self.kapi.get_asset_info().transpose()
 
     @cached (always=True)
-    def assetPairs(self) -> DataFrame: return self.kapi.get_tradable_asset_pairs().transpose()
+    def asset_pairs(self) -> DataFrame: return self.kapi.get_tradable_asset_pairs().transpose()
 
     @cached
     def tickers(self, pairs) -> DataFrame:
-        [validators.asset_pair(self, pair) for pair in pairs]
+        validators.assert_list(pairs, "pairs")
+        validators.asset_pair(self, pairs)
         assetList = [pairs[n:n + 9] for n in range(0, len(pairs), 9)]
-        print ("Requesting {} set of tickers, it will take aprox. {}s".format(len(assetList), len(assetList)-1*5))
+        logger.info ("Tickers::requesting {} set of tickers, it will take aprox. {}s".format(len(assetList), (len(assetList)-1)*5))
         tickers = [self.kapi.get_ticker_information(",".join(assets)) for assets in assetList]
-        return pandas.concat(tickers).transpose()
+        tickerDf = pandas.concat(tickers).transpose()
+        logger.info ("Tickers::retrieved {} tickers".format(len(tickerDf.columns)))
+        return tickerDf
 
+    """Returns OHLC data for given pairs
+    
+    Returns the OHLC data for given pairs as a map pair->OHLC data. 
+    This may take a while if several asset pairs are provided.
+    
+    Attributes
+    ----------
+    pairs: list of asset pairs
+    interval: one of allowed interval values
+    since: optional since timestamp
+    """
     @cached
-    def ohlc(self, pair, interval: str = "1min", since=None) -> DataFrame:
-        validators.asset_pair (self, pair)
+    def ohlc(self, pairs, interval: str = "1min", since=None) -> map:
+        validators.assert_list(pairs, "pairs")
+        validators.asset_pair (self, pairs)
         intervals = {"1min": 1, "5min": 5, "15min": 15, "30min": 30, "1h": 60, "4h": 240, "1d": 1440, "7d": 10080, "15d": 21600}
         validators.assert_interval(interval, intervals)
-        return self.kapi.get_ohlc_data(pair, intervals[interval], since)
+        ohlcList = {pair:self.kapi.get_ohlc_data(pair, intervals[interval], since) for pair in pairs}
+        return ohlcList
 
     @cached
-    def orderBook(self, pair, count=None) -> (DataFrame, DataFrame):
+    def order_book(self, pair, count=None) -> (DataFrame, DataFrame):
         validators.asset_pair(self, pair)
         return self.kapi.get_order_book(pair, count)
 
@@ -95,15 +112,15 @@ class Krakee:
 
     # Private API
 
-    def addOrder (self, order_builder: OrderBuilder):
+    def add_order (self, order_builder: OrderBuilder):
         return self.kapi.api.query_private("AddTrade", order_builder.build())
 
     def balance(self): return self.kapi.get_account_balance()
 
-    def tradeBalance (self): return self.kapi.get_trade_balance()
+    def trade_balance (self): return self.kapi.get_trade_balance()
 
-    def openOrders (self): return self.kapi.get_open_orders()
-    def closedOrders (self): return self.kapi.get_closed_orders()
+    def open_orders (self): return self.kapi.get_open_orders()
+    def closed_orders (self): return self.kapi.get_closed_orders()
 
     # Extras
 
@@ -117,10 +134,8 @@ class Krakee:
     currency: the currency to look for
  
     """
-    def assetPairsByQuoteCurrency (self, currency):
-        ap =  self.assetPairs()
+    def asset_pairs_by_quote_currency (self, currency):
+        ap =  self.asset_pairs()
         currencies = set(ap.loc['quote'])
         assert (currency in currencies), "currency must be one of {}".format(currencies)
         return ap.loc[:, ap.loc['quote'] == currency]
-
-k = Krakee()

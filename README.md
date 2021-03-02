@@ -1,3 +1,4 @@
+[![PyPI version](https://badge.fury.io/py/krakee.svg)](https://badge.fury.io/py/krakee)
 # krakee
 
 [Kraken](https://kraken.com) Exchange API with a thin pandas Dataframe wrap.

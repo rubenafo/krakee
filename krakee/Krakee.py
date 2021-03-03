@@ -44,6 +44,17 @@ def cached(*args, **kwargs):
 
 class Krakee:
 
+    """Initiates a new Krakee instance
+
+        Creates a new Krakee instance. On start, the list of asset pairs is always fetched and cached, as it's
+        unlikely that it will change during the object lifecycle and it's used to validate method parameters.
+
+        Attributes
+        ----------
+        authfile: path to the file with two lines, containing auth token and private key, in that order.
+        full_caching: if True, all requests to Kraken Public API will be run and then cached. Any onward invocation
+                      will see the cached content. Disabled by default.
+        """
     def __init__(self, authfile=None, full_caching=False):
         self.cache = {}
         self.is_cached = full_caching

@@ -13,7 +13,6 @@ from krakee.api import validators
 
 # @cache decorator to cache responses
 def cached(*args, **kwargs):
-
     func = None
     if len(args) == 1 :
         func = args[0]
@@ -28,11 +27,12 @@ def cached(*args, **kwargs):
         def wrapper(self, *args, **kwargs):
             func_name = func.__name__
             cachedValue = None
-            cachedId = "_".join([func_name])
+            str_args = "_".join(list(map(lambda x: str(x), args)))
+            cachedId = "_".join([func_name, str_args])
             if self.is_cached or always:
                 if cachedId in self.cache:
                     cachedValue = self.cache[cachedId]
-                    logger.info ("Cache::retrieving {}() from cache...".format(func_name))
+                    logger.info ("Cache::retrieving {}({}) from cache...".format(func_name, cachedId))
             if cachedValue is None:
                 cachedValue = func(self, *args, **kwargs)
                 if self.cache or always:
@@ -44,7 +44,19 @@ def cached(*args, **kwargs):
 
 class Krakee:
 
+    """Initiates a new Krakee instance
+
+        Creates a new Krakee instance. On start, the list of asset pairs is always fetched and cached, as it's
+        unlikely that it will change during the object lifecycle and it's used to validate method parameters.
+
+        Attributes
+        ----------
+        authfile: path to the file with two lines, containing auth token and private key, in that order.
+        full_caching: if True, all requests to Kraken Public API will be run and then cached. Any onward invocation
+                      will see the cached content. Disabled by default.
+        """
     def __init__(self, authfile=None, full_caching=False):
+        logging.basicConfig(level=logging.INFO)
         self.cache = {}
         self.is_cached = full_caching
         if authfile:
@@ -124,8 +136,7 @@ class Krakee:
 
     # Extras
 
-    """
-    Returns asset pairs with given quote currency. E.g. XXBTUSD quote is 'USD'
+    """Returns asset pairs with given quote currency. E.g. XXBTUSD quote is 'USD'
     
     From the whole set of asset pairs, filters the ones with given quote currency.
     
@@ -139,3 +150,11 @@ class Krakee:
         currencies = set(ap.loc['quote'])
         assert (currency in currencies), "currency must be one of {}".format(currencies)
         return ap.loc[:, ap.loc['quote'] == currency]
+
+    """Returns the list of currencies defined in all the asset pairs
+    """
+    def currencies (self):
+        return list(set(self.asset_pairs().loc['qoute']))
+
+
+k = Krakee(full_caching=True)

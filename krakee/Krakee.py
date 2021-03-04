@@ -155,6 +155,3 @@ class Krakee:
     """
     def currencies (self):
         return list(set(self.asset_pairs().loc['qoute']))
-
-
-k = Krakee(full_caching=True)

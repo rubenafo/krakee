@@ -124,14 +124,20 @@ class Krakee:
 
     # Private API
 
+    @cached
     def add_order (self, order_builder: OrderBuilder):
         return self.kapi.api.query_private("AddTrade", order_builder.build())
 
+    @cached
     def balance(self): return self.kapi.get_account_balance()
 
+    @cached
     def trade_balance (self): return self.kapi.get_trade_balance()
 
+    @cached
     def open_orders (self): return self.kapi.get_open_orders()
+
+    @cached
     def closed_orders (self): return self.kapi.get_closed_orders()
 
     # Extras
@@ -154,4 +160,6 @@ class Krakee:
     """Returns the list of currencies defined in all the asset pairs
     """
     def currencies (self):
-        return list(set(self.asset_pairs().loc['qoute']))
+        return list(set(self.asset_pairs().loc['quote']))
+
+k = Krakee(full_caching=True)

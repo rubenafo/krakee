@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="krakee",
-    version="0.9.1",
+    version="0.9.2",
     author="Ruben Afonso",
     author_email="rbfrancos@gmail.com",
     description="Kraken Exchange API with a thin pandas Dataframe wrap",

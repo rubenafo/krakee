@@ -8,7 +8,7 @@ from pandas import DataFrame
 from pykrakenapi import KrakenAPI
 
 from krakee import OrderBuilder
-from krakee.api import validators
+from krakee.api import utils
 
 
 # @cache decorator to cache responses
@@ -78,12 +78,13 @@ class Krakee:
 
     @cached
     def tickers(self, pairs) -> DataFrame:
-        validators.assert_list(pairs, "pairs")
-        validators.asset_pair(self, pairs)
+        utils.assert_list(pairs, "pairs")
+        utils.asset_pair(self, pairs)
         assetList = [pairs[n:n + 9] for n in range(0, len(pairs), 9)]
         logger.info ("Tickers::requesting {} set of tickers, it will take aprox. {}s".format(len(assetList), (len(assetList)-1)*5))
         tickers = [self.kapi.get_ticker_information(",".join(assets)) for assets in assetList]
-        tickerDf = pandas.concat(tickers).transpose()
+        tickerDf = pandas.concat(tickers)
+        tickerDf = utils.dataframe_to_numeric(tickerDf).transpose()
         logger.info ("Tickers::retrieved {} tickers".format(len(tickerDf.columns)))
         return tickerDf
 
@@ -100,26 +101,26 @@ class Krakee:
     """
     @cached
     def ohlc(self, pairs, interval: str = "1min", since=None) -> map:
-        validators.assert_list(pairs, "pairs")
-        validators.asset_pair (self, pairs)
+        utils.assert_list(pairs, "pairs")
+        utils.asset_pair (self, pairs)
         intervals = {"1min": 1, "5min": 5, "15min": 15, "30min": 30, "1h": 60, "4h": 240, "1d": 1440, "7d": 10080, "15d": 21600}
-        validators.assert_interval(interval, intervals)
+        utils.assert_interval(interval, intervals)
         ohlcList = {pair:self.kapi.get_ohlc_data(pair, intervals[interval], since) for pair in pairs}
         return ohlcList
 
     @cached
     def order_book(self, pair, count=None) -> (DataFrame, DataFrame):
-        validators.asset_pair(self, pair)
+        utils.asset_pair(self, pair)
         return self.kapi.get_order_book(pair, count)
 
     @cached
     def trades(self, pair, since=None) -> DataFrame:
-        validators.asset_pair(self, pair)
+        utils.asset_pair(self, pair)
         return self.kapi.get_recent_trades (pair, since)
 
     @cached
     def spread(self, pair, since=None) -> DataFrame:
-        validators.asset_pair(self, pair)
+        utils.asset_pair(self, pair)
         return self.kapi.get_recent_spread_data (pair, since)
 
     # Private API
@@ -161,5 +162,3 @@ class Krakee:
     """
     def currencies (self):
         return list(set(self.asset_pairs().loc['quote']))
-
-k = Krakee(full_caching=True)

@@ -168,11 +168,10 @@ class Krakee:
     Returns the human-friendly name for the given altnames (altname value in assets() endpoint)
     """
     def pretty_name(self, *altname: str) -> str:
-        print(type(altname))
         if len(altname) == 1:
             if type(altname[0]) == list:
-                return [PrettyNames.PRETTY_NAMES[str.upper(an)] for an in altname[0]]
+                return [PrettyNames.get_pretty_name(an) for an in altname[0]]
             elif type(altname[0]) == str:
-                return PrettyNames.PRETTY_NAMES[str.upper(altname[0])]
+                return PrettyNames.get_pretty_name(altname[0])
         else:
-            return [PrettyNames.PRETTY_NAMES[str.upper(an)] for an in altname]
+            return [PrettyNames.get_pretty_name(an) for an in altname]

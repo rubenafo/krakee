@@ -9,12 +9,13 @@ from pykrakenapi import KrakenAPI
 
 from krakee import OrderBuilder
 from krakee.api import utils
+from krakee.api import PrettyNames
 
 
 # @cache decorator to cache responses
 def cached(*args, **kwargs):
     func = None
-    if len(args) == 1 :
+    if len(args) == 1:
         func = args[0]
     if func:
         always = False
@@ -162,3 +163,16 @@ class Krakee:
     """
     def currencies (self):
         return list(set(self.asset_pairs().loc['quote']))
+
+    """
+    Returns the human-friendly name for the given altnames (altname value in assets() endpoint)
+    """
+    def pretty_name(self, *altname: str) -> str:
+        print(type(altname))
+        if len(altname) == 1:
+            if type(altname[0]) == list:
+                return [PrettyNames.PRETTY_NAMES[str.upper(an)] for an in altname[0]]
+            elif type(altname[0]) == str:
+                return PrettyNames.PRETTY_NAMES[str.upper(altname[0])]
+        else:
+            return [PrettyNames.PRETTY_NAMES[str.upper(an)] for an in altname]

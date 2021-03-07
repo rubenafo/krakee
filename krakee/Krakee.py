@@ -75,7 +75,12 @@ class Krakee:
     def assets(self) -> DataFrame: return self.kapi.get_asset_info().transpose()
 
     @cached (always=True)
-    def asset_pairs(self) -> DataFrame: return self.kapi.get_tradable_asset_pairs().transpose()
+    def asset_pairs(self, assetPair: str=None) -> DataFrame:
+        asset_pairs = self.kapi.get_tradable_asset_pairs().transpose()
+        if (assetPair != None):
+            return asset_pairs[assetPair]
+        else:
+            return asset_pairs
 
     @cached
     def tickers(self, pairs) -> DataFrame:

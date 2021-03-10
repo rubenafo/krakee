@@ -77,7 +77,7 @@ class Krakee:
     @cached (always=True)
     def asset_pairs(self, assetPair: str=None) -> DataFrame:
         asset_pairs = self.kapi.get_tradable_asset_pairs().transpose()
-        if (assetPair != None):
+        if assetPair != None:
             return asset_pairs[assetPair]
         else:
             return asset_pairs
@@ -155,7 +155,7 @@ class Krakee:
     
     Parameters
     ----------
-    currency: the currency to look for
+    currency: the quote currency to look for
  
     """
     def asset_pairs_by_quote_currency (self, currency):

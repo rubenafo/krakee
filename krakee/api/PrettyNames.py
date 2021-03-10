@@ -73,6 +73,7 @@ PRETTY_NAMES = {
     "XBT":"Bitcoin",
     "XDG":"Dogecoin",
     "XLM":"Stellar Lumens",
+    "XXLM": "Stellar Lumens",
     "XMR":"Monero",
     "XRP":"Ripple",
     "ZEC":"Zcash",
@@ -85,9 +86,16 @@ PRETTY_NAMES = {
     "USD":"US Dollar"
 }
 
-def get_pretty_name(alt_name:str):
-    if str.upper(alt_name) in PRETTY_NAMES:
-        return PRETTY_NAMES[str.upper(alt_name)]
+"""
+Returns the human-friendly version of the ticker.
+The input ticker name is returned if there is no match in the list.
+"""
+def get_pretty_name(alt_name_raw:str):
+    alt_name = str.upper(alt_name_raw)
+    if alt_name.startswith("XX"):
+        alt_name = alt_name[1:]
+    if alt_name in PRETTY_NAMES:
+        return PRETTY_NAMES[alt_name]
     else:
-        logger.warn("PrettyNames: {} mapping not found".format(str.upper(alt_name)))
+        logger.warn("PrettyNames: {} mapping not found".format(alt_name))
         return alt_name

@@ -33,7 +33,8 @@ def cached(*args, **kwargs):
             if self.is_cached or always:
                 if cachedId in self.cache:
                     cachedValue = self.cache[cachedId]
-                    logger.info ("Cache::retrieving {}({}) from cache...".format(func_name, cachedId))
+                    if not always:
+                        logger.info ("Cache::retrieving {}({}) from cache...".format(func_name, cachedId))
             if cachedValue is None:
                 cachedValue = func(self, *args, **kwargs)
                 if self.cache or always:

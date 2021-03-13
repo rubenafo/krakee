@@ -1,10 +1,11 @@
-from typing import Dict
+from typing import Dict, List
 
 import pandas
 import pandas as pd
 
 def assert_list (elem, param_name):
     assert (type(elem) == list), "{} parameter should be a list, type={} found".format(param_name, type(elem))
+
 
 def asset_pair (krakee, pair):
     if type(pair) == list:
@@ -24,10 +25,22 @@ def dataframe_to_numeric(df):
 
 
 def merge_ohlc (data: Dict[str, tuple]) -> pd.DataFrame:
-    first_asset_pair = list(data.keys())[0]
-    first_df = data[first_asset_pair][0]
-    df_columns = {colname: colname + "_" + first_asset_pair for colname in list(first_df.columns)}
-    first_df = first_df.rename(columns=df_columns)
-    for asset_pair in list(data.keys())[1:]:
-        first_df = first_df.join(data[asset_pair][0], rsuffix="_" + asset_pair)
-    return first_df
+    renamed_dfs = []
+    for asset_pair in list(data.keys()):
+        df = data[asset_pair][0]
+        new_columns = {colname: colname + "_" + asset_pair for colname in list(df.columns)}
+        renamed_dfs.append(df.rename(columns=new_columns))
+    for df in renamed_dfs[1:]:
+        renamed_dfs[0] = renamed_dfs[0].join(df)
+    return renamed_dfs[0]
+
+
+def as_list (values) -> List:
+    if type(values) == list:
+        return values
+    if type(values) == tuple:
+        if type(values[0]) == list:
+            return values[0]
+        else:
+            return list(values)
+    return [values]

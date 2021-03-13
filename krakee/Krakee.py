@@ -85,8 +85,8 @@ class Krakee:
             return asset_pairs
 
     @cached
-    def tickers(self, pairs) -> DataFrame:
-        utils.assert_list(pairs, "pairs")
+    def tickers(self, *asset_pairs) -> DataFrame:
+        pairs = utils.as_list(asset_pairs)
         utils.asset_pair(self, pairs)
         assetList = [pairs[n:n + 9] for n in range(0, len(pairs), 9)]
         logger.info ("Tickers::requesting {} set of tickers, it will take aprox. {}s".format(len(assetList), (len(assetList)-1)*5))
@@ -110,8 +110,8 @@ class Krakee:
     join: whether to join all retrieved OHLC frames into one dataframe
     """
     @cached
-    def ohlc(self, pairs, interval: str = "1min", since=None, join=False) -> Dict[str, DataFrame]:
-        utils.assert_list(pairs, "pairs")
+    def ohlc(self, *asset_pairs, interval: str = "1min", since=None, join=False) -> Dict[str, DataFrame]:
+        pairs = utils.as_list(asset_pairs)
         utils.asset_pair (self, pairs)
         intervals = {"1min": 1, "5min": 5, "15min": 15, "30min": 30, "1h": 60, "4h": 240, "1d": 1440, "7d": 10080, "15d": 21600}
         utils.assert_interval(interval, intervals)

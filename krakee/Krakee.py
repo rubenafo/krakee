@@ -1,6 +1,7 @@
 import logging
 import logging as logger
 from functools import wraps
+from typing import Dict
 
 import krakenex
 import pandas
@@ -97,7 +98,8 @@ class Krakee:
 
     """Returns OHLC data for given pairs
     
-    Returns the OHLC data for given pairs as a map pair->OHLC data. 
+    Returns the OHLC data for given pairs as single dataframe with asset pair name appended to the OHLC columns 
+    (e.g. open column for ADAUSD = open_ADAUSD)
     This may take a while if several asset pairs are provided.
     
     Attributes
@@ -105,15 +107,16 @@ class Krakee:
     pairs: list of asset pairs
     interval: one of allowed interval values
     since: optional since timestamp
+    join: whether to join all retrieved OHLC frames into one dataframe
     """
     @cached
-    def ohlc(self, pairs, interval: str = "1min", since=None) -> map:
+    def ohlc(self, pairs, interval: str = "1min", since=None, join=False) -> Dict[str, DataFrame]:
         utils.assert_list(pairs, "pairs")
         utils.asset_pair (self, pairs)
         intervals = {"1min": 1, "5min": 5, "15min": 15, "30min": 30, "1h": 60, "4h": 240, "1d": 1440, "7d": 10080, "15d": 21600}
         utils.assert_interval(interval, intervals)
         ohlcList = {pair:self.kapi.get_ohlc_data(pair, intervals[interval], since) for pair in pairs}
-        return ohlcList
+        return utils.merge_ohlc(ohlcList)
 
     @cached
     def order_book(self, pair, count=None) -> (DataFrame, DataFrame):

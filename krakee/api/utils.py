@@ -1,3 +1,6 @@
+from typing import Dict
+
+import pandas
 import pandas as pd
 
 def assert_list (elem, param_name):
@@ -18,3 +21,13 @@ def dataframe_to_numeric(df):
         for j in list(df.index):
             df[i][j] = pd.to_numeric(df[i][j])
     return df
+
+
+def merge_ohlc (data: Dict[str, tuple]) -> pd.DataFrame:
+    first_asset_pair = list(data.keys())[0]
+    first_df = data[first_asset_pair][0]
+    df_columns = {colname: colname + "_" + first_asset_pair for colname in list(first_df.columns)}
+    first_df = first_df.rename(columns=df_columns)
+    for asset_pair in list(data.keys())[1:]:
+        first_df = first_df.join(data[asset_pair][0], rsuffix="_" + asset_pair)
+    return first_df

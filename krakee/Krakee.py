@@ -1,7 +1,6 @@
 import logging
 import logging as logger
 from functools import wraps
-from typing import Dict
 
 import krakenex
 import pandas
@@ -9,16 +8,15 @@ from pandas import DataFrame
 from pykrakenapi import KrakenAPI
 
 from krakee import OrderBuilder
-from krakee.api import utils
 from krakee.api import PrettyNames
-
-
-# @cache decorator to cache responses
+from krakee.api import utils
+from krakee.types.AssetDataFrame import AssetDataFrame
 from krakee.types.OhlcDataFrame import OhlcDataFrame
 from krakee.types.TickerDataFrame import TickerDataFrame
-from krakee.types.AssetDataFrame import AssetDataFrame
 
-
+"""
+@cache decorator to cache responses
+"""
 def cached(*args, **kwargs):
     func = None
     if len(args) == 1:
@@ -35,12 +33,13 @@ def cached(*args, **kwargs):
             func_name = func.__name__
             cachedValue = None
             str_args = "_".join(list(map(lambda x: str(x), args)))
-            cachedId = "_".join([func_name, str_args])
+            fun_args = "_".join(list(map(lambda x: str(x), kwargs.values())))
+            cachedId = "_".join([func_name, str_args, fun_args])
             if self.is_cached or always:
                 if cachedId in self.cache:
                     cachedValue = self.cache[cachedId]
                     if not always:
-                        logger.info ("Cache::retrieving {}({}) from cache...".format(func_name, cachedId))
+                        logger.info ("Cache::retrieving ({}) from cache...".format(cachedId))
             if cachedValue is None:
                 cachedValue = func(self, *args, **kwargs)
                 if self.cache or always:

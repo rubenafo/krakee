@@ -14,6 +14,7 @@ from krakee.api import PrettyNames
 
 
 # @cache decorator to cache responses
+from krakee.types.OhlcDataFrame import OhlcDataFrame
 from krakee.types.TickerDataFrame import TickerDataFrame
 from krakee.types.AssetDataFrame import AssetDataFrame
 
@@ -115,13 +116,14 @@ class Krakee:
     join: whether to join all retrieved OHLC frames into one dataframe
     """
     @cached
-    def ohlc(self, *asset_pairs, interval: str = "1min", since=None, join=False) -> Dict[str, DataFrame]:
+    def ohlc(self, *asset_pairs, interval: str = "1min", since=None, join=False) -> OhlcDataFrame:
         pairs = utils.as_list(asset_pairs)
         utils.asset_pair (self, pairs)
         intervals = {"1min": 1, "5min": 5, "15min": 15, "30min": 30, "1h": 60, "4h": 240, "1d": 1440, "7d": 10080, "15d": 21600}
         utils.assert_interval(interval, intervals)
         ohlcList = {pair:self.kapi.get_ohlc_data(pair, intervals[interval], since) for pair in pairs}
-        return utils.merge_ohlc(ohlcList)
+        ohlcDf = utils.merge_ohlc(ohlcList)
+        return OhlcDataFrame(ohlcDf)
 
     @cached
     def order_book(self, pair, count=None) -> (DataFrame, DataFrame):

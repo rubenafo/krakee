@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
 
 class TickerDataFrame (DataFrame):
@@ -21,8 +21,5 @@ class TickerDataFrame (DataFrame):
         src_values = src_values.drop(labels=['c', 'a', 'b', 'v', 'p', 't', 'l', 'h', 'o'])
         DataFrame.__init__(self, src_values.values, columns=src_values.columns, index=src_values.index)
 
-    def by_asset_pair_name(self, pair_name: str) -> TickerDataFrame:
-        pair_name = pair_name.upper()
-        assert pair_name in list(self.columns), \
-            "Unknown pair name: {} - valid values: {}".format(pair_name, list(self.columns))
-        return self[pair_name]
+    def asset_pairs_sorted_by (self, row_name: str) -> Series:
+        return self.loc[row_name].sort_values(ascending=False)

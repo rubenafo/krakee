@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 import pandas as pd
+from pandas import DataFrame
 
 
 def assert_list (elem, param_name):
@@ -24,7 +25,7 @@ def dataframe_to_numeric(df):
     return df
 
 
-def merge_ohlc (data: Dict[str, tuple]) -> pd.DataFrame:
+def merge_ohlc (data: Dict[str, tuple]) -> DataFrame:
     renamed_dfs = []
     for asset_pair in list(data.keys()):
         df = data[asset_pair][0]

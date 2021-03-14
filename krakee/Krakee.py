@@ -1,6 +1,7 @@
 import logging
 import logging as logger
 from functools import wraps
+from typing import Dict
 
 import krakenex
 import pandas
@@ -9,12 +10,13 @@ from pykrakenapi import KrakenAPI
 
 from krakee import OrderBuilder
 from krakee.api import utils
+from krakee.api import PrettyNames
 
 
 # @cache decorator to cache responses
 def cached(*args, **kwargs):
     func = None
-    if len(args) == 1 :
+    if len(args) == 1:
         func = args[0]
     if func:
         always = False
@@ -32,7 +34,8 @@ def cached(*args, **kwargs):
             if self.is_cached or always:
                 if cachedId in self.cache:
                     cachedValue = self.cache[cachedId]
-                    logger.info ("Cache::retrieving {}({}) from cache...".format(func_name, cachedId))
+                    if not always:
+                        logger.info ("Cache::retrieving {}({}) from cache...".format(func_name, cachedId))
             if cachedValue is None:
                 cachedValue = func(self, *args, **kwargs)
                 if self.cache or always:
@@ -74,11 +77,16 @@ class Krakee:
     def assets(self) -> DataFrame: return self.kapi.get_asset_info().transpose()
 
     @cached (always=True)
-    def asset_pairs(self) -> DataFrame: return self.kapi.get_tradable_asset_pairs().transpose()
+    def asset_pairs(self, assetPair: str=None) -> DataFrame:
+        asset_pairs = self.kapi.get_tradable_asset_pairs().transpose()
+        if assetPair != None:
+            return asset_pairs[assetPair]
+        else:
+            return asset_pairs
 
     @cached
-    def tickers(self, pairs) -> DataFrame:
-        utils.assert_list(pairs, "pairs")
+    def tickers(self, *asset_pairs) -> DataFrame:
+        pairs = utils.as_list(asset_pairs)
         utils.asset_pair(self, pairs)
         assetList = [pairs[n:n + 9] for n in range(0, len(pairs), 9)]
         logger.info ("Tickers::requesting {} set of tickers, it will take aprox. {}s".format(len(assetList), (len(assetList)-1)*5))
@@ -90,7 +98,8 @@ class Krakee:
 
     """Returns OHLC data for given pairs
     
-    Returns the OHLC data for given pairs as a map pair->OHLC data. 
+    Returns the OHLC data for given pairs as single dataframe with asset pair name appended to the OHLC columns 
+    (e.g. open column for ADAUSD = open_ADAUSD)
     This may take a while if several asset pairs are provided.
     
     Attributes
@@ -98,15 +107,16 @@ class Krakee:
     pairs: list of asset pairs
     interval: one of allowed interval values
     since: optional since timestamp
+    join: whether to join all retrieved OHLC frames into one dataframe
     """
     @cached
-    def ohlc(self, pairs, interval: str = "1min", since=None) -> map:
-        utils.assert_list(pairs, "pairs")
+    def ohlc(self, *asset_pairs, interval: str = "1min", since=None, join=False) -> Dict[str, DataFrame]:
+        pairs = utils.as_list(asset_pairs)
         utils.asset_pair (self, pairs)
         intervals = {"1min": 1, "5min": 5, "15min": 15, "30min": 30, "1h": 60, "4h": 240, "1d": 1440, "7d": 10080, "15d": 21600}
         utils.assert_interval(interval, intervals)
         ohlcList = {pair:self.kapi.get_ohlc_data(pair, intervals[interval], since) for pair in pairs}
-        return ohlcList
+        return utils.merge_ohlc(ohlcList)
 
     @cached
     def order_book(self, pair, count=None) -> (DataFrame, DataFrame):
@@ -149,7 +159,7 @@ class Krakee:
     
     Parameters
     ----------
-    currency: the currency to look for
+    currency: the quote currency to look for
  
     """
     def asset_pairs_by_quote_currency (self, currency):
@@ -162,3 +172,15 @@ class Krakee:
     """
     def currencies (self):
         return list(set(self.asset_pairs().loc['quote']))
+
+    """
+    Returns the human-friendly name for the given altnames (altname value in assets() endpoint)
+    """
+    def pretty_name(self, *altname: str) -> str:
+        if len(altname) == 1:
+            if type(altname[0]) == list:
+                return [PrettyNames.get_pretty_name(an) for an in altname[0]]
+            elif type(altname[0]) == str:
+                return PrettyNames.get_pretty_name(altname[0])
+        else:
+            return [PrettyNames.get_pretty_name(an) for an in altname]

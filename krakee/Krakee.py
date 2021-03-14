@@ -14,6 +14,10 @@ from krakee.api import PrettyNames
 
 
 # @cache decorator to cache responses
+from krakee.types.TickerDataFrame import TickerDataFrame
+from krakee.types.AssetDataFrame import AssetDataFrame
+
+
 def cached(*args, **kwargs):
     func = None
     if len(args) == 1:
@@ -74,7 +78,8 @@ class Krakee:
         self.asset_pairs()
 
     @cached(always=True)
-    def assets(self) -> DataFrame: return self.kapi.get_asset_info().transpose()
+    def assets(self) -> AssetDataFrame:
+        return AssetDataFrame(self.kapi.get_asset_info().transpose())
 
     @cached (always=True)
     def asset_pairs(self, assetPair: str=None) -> DataFrame:
@@ -85,7 +90,7 @@ class Krakee:
             return asset_pairs
 
     @cached
-    def tickers(self, *asset_pairs) -> DataFrame:
+    def tickers(self, *asset_pairs) -> TickerDataFrame:
         pairs = utils.as_list(asset_pairs)
         utils.asset_pair(self, pairs)
         assetList = [pairs[n:n + 9] for n in range(0, len(pairs), 9)]
@@ -94,7 +99,7 @@ class Krakee:
         tickerDf = pandas.concat(tickers)
         tickerDf = utils.dataframe_to_numeric(tickerDf).transpose()
         logger.info ("Tickers::retrieved {} tickers".format(len(tickerDf.columns)))
-        return tickerDf
+        return TickerDataFrame(tickerDf)
 
     """Returns OHLC data for given pairs
     

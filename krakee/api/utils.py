@@ -1,7 +1,7 @@
 from typing import Dict, List
 
-import pandas
 import pandas as pd
+
 
 def assert_list (elem, param_name):
     assert (type(elem) == list), "{} parameter should be a list, type={} found".format(param_name, type(elem))

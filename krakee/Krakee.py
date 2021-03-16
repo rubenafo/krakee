@@ -194,3 +194,10 @@ class Krakee:
                 return PrettyNames.get_pretty_name(altname[0])
         else:
             return [PrettyNames.get_pretty_name(an) for an in altname]
+
+    """
+    Removes all cached requests from the internal cache
+    """
+    def clear_cache(self):
+        self.cache = {}
+        logger.info("Cache cleared")

@@ -1,7 +1,6 @@
 import logging
 import logging as logger
 from functools import wraps
-from typing import Dict
 
 import krakenex
 import pandas
@@ -9,11 +8,15 @@ from pandas import DataFrame
 from pykrakenapi import KrakenAPI
 
 from krakee import OrderBuilder
-from krakee.api import utils
 from krakee.api import PrettyNames
+from krakee.api import utils
+from krakee.types.AssetDataFrame import AssetDataFrame
+from krakee.types.OhlcDataFrame import OhlcDataFrame
+from krakee.types.TickerDataFrame import TickerDataFrame
 
-
-# @cache decorator to cache responses
+"""
+@cache decorator to cache responses
+"""
 def cached(*args, **kwargs):
     func = None
     if len(args) == 1:
@@ -30,12 +33,13 @@ def cached(*args, **kwargs):
             func_name = func.__name__
             cachedValue = None
             str_args = "_".join(list(map(lambda x: str(x), args)))
-            cachedId = "_".join([func_name, str_args])
+            fun_args = "_".join(list(map(lambda x: str(x), kwargs.values())))
+            cachedId = "_".join([func_name, str_args, fun_args])
             if self.is_cached or always:
                 if cachedId in self.cache:
                     cachedValue = self.cache[cachedId]
                     if not always:
-                        logger.info ("Cache::retrieving {}({}) from cache...".format(func_name, cachedId))
+                        logger.info ("Cache::retrieving ({}) from cache...".format(cachedId))
             if cachedValue is None:
                 cachedValue = func(self, *args, **kwargs)
                 if self.cache or always:
@@ -74,7 +78,8 @@ class Krakee:
         self.asset_pairs()
 
     @cached(always=True)
-    def assets(self) -> DataFrame: return self.kapi.get_asset_info().transpose()
+    def assets(self) -> AssetDataFrame:
+        return AssetDataFrame(self.kapi.get_asset_info().transpose())
 
     @cached (always=True)
     def asset_pairs(self, assetPair: str=None) -> DataFrame:
@@ -85,7 +90,7 @@ class Krakee:
             return asset_pairs
 
     @cached
-    def tickers(self, *asset_pairs) -> DataFrame:
+    def tickers(self, *asset_pairs) -> TickerDataFrame:
         pairs = utils.as_list(asset_pairs)
         utils.asset_pair(self, pairs)
         assetList = [pairs[n:n + 9] for n in range(0, len(pairs), 9)]
@@ -94,7 +99,7 @@ class Krakee:
         tickerDf = pandas.concat(tickers)
         tickerDf = utils.dataframe_to_numeric(tickerDf).transpose()
         logger.info ("Tickers::retrieved {} tickers".format(len(tickerDf.columns)))
-        return tickerDf
+        return TickerDataFrame(tickerDf)
 
     """Returns OHLC data for given pairs
     
@@ -110,13 +115,14 @@ class Krakee:
     join: whether to join all retrieved OHLC frames into one dataframe
     """
     @cached
-    def ohlc(self, *asset_pairs, interval: str = "1min", since=None, join=False) -> Dict[str, DataFrame]:
+    def ohlc(self, *asset_pairs, interval: str = "1min", since=None, join=False) -> OhlcDataFrame:
         pairs = utils.as_list(asset_pairs)
         utils.asset_pair (self, pairs)
         intervals = {"1min": 1, "5min": 5, "15min": 15, "30min": 30, "1h": 60, "4h": 240, "1d": 1440, "7d": 10080, "15d": 21600}
         utils.assert_interval(interval, intervals)
         ohlcList = {pair:self.kapi.get_ohlc_data(pair, intervals[interval], since) for pair in pairs}
-        return utils.merge_ohlc(ohlcList)
+        ohlcDf = utils.merge_ohlc(ohlcList)
+        return OhlcDataFrame(ohlcDf)
 
     @cached
     def order_book(self, pair, count=None) -> (DataFrame, DataFrame):
@@ -160,13 +166,17 @@ class Krakee:
     Parameters
     ----------
     currency: the quote currency to look for
+    skip_fiat: True to skip fiat currency pairs (e.g. GBPZUSD)
  
     """
-    def asset_pairs_by_quote_currency (self, currency):
+    def asset_pairs_by_quote_currency (self, currency, skip_fiat=False) -> DataFrame:
         ap =  self.asset_pairs()
         currencies = set(ap.loc['quote'])
         assert (currency in currencies), "currency must be one of {}".format(currencies)
-        return ap.loc[:, ap.loc['quote'] == currency]
+        df = ap.loc[:, ap.loc['quote'] == currency]
+        if skip_fiat:
+            df = df[list(filter(lambda x: not x.startswith("Z"), df.columns))].columns
+        return df
 
     """Returns the list of currencies defined in all the asset pairs
     """

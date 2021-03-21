@@ -176,9 +176,9 @@ class Krakee:
         assert (currency in currencies), "currency must be one of {}".format(currencies)
         df = ap.loc[:, ap.loc['quote'] == currency]
         if skip_fiat:
-            df = df[list(filter(lambda x: not x.startswith("Z"), df.columns))].columns
+            df = df[list(filter(lambda x: not x.startswith("Z"), df.columns))]
         if skip_tbtc:
-            df = df[list(filter(lambda x: not x.startswith("TBTC"), df.columns))].columns
+            df = df[list(filter(lambda x: not x.startswith("TBTC"), df.columns))]
         return df
 
     """Returns the list of currencies defined in all the asset pairs

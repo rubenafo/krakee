@@ -167,15 +167,18 @@ class Krakee:
     ----------
     currency: the quote currency to look for
     skip_fiat: True to skip fiat currency pairs (e.g. GBPZUSD)
+    skip_tbtc: True to skip TBTC Kraken's internal asset
  
     """
-    def asset_pairs_by_quote_currency (self, currency, skip_fiat=False) -> DataFrame:
+    def asset_pairs_by_quote_currency (self, currency, skip_fiat=False, skip_tbtc=True) -> DataFrame:
         ap =  self.asset_pairs()
         currencies = set(ap.loc['quote'])
         assert (currency in currencies), "currency must be one of {}".format(currencies)
         df = ap.loc[:, ap.loc['quote'] == currency]
         if skip_fiat:
             df = df[list(filter(lambda x: not x.startswith("Z"), df.columns))].columns
+        if skip_tbtc:
+            df = df[list(filter(lambda x: not x.startswith("TBTC"), df.columns))].columns
         return df
 
     """Returns the list of currencies defined in all the asset pairs
@@ -194,3 +197,10 @@ class Krakee:
                 return PrettyNames.get_pretty_name(altname[0])
         else:
             return [PrettyNames.get_pretty_name(an) for an in altname]
+
+    """
+    Removes all cached requests from the internal cache
+    """
+    def clear_cache(self):
+        self.cache = {}
+        logger.info("Cache cleared")

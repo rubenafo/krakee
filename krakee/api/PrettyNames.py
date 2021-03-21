@@ -92,10 +92,10 @@ The input ticker name is returned if there is no match in the list.
 """
 def get_pretty_name(alt_name_raw:str):
     alt_name = str.upper(alt_name_raw)
-    if alt_name.startswith("XX"):
-        alt_name = alt_name[1:]
     if alt_name in PRETTY_NAMES:
         return PRETTY_NAMES[alt_name]
+    if alt_name[1:] in PRETTY_NAMES:
+        return PRETTY_NAMES[alt_name[1:]]
     else:
         logger.warn("PrettyNames: {} mapping not found".format(alt_name))
         return alt_name

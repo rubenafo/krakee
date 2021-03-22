@@ -1,3 +1,4 @@
+from datetime import timedelta, datetime
 from typing import Dict, List
 
 import pandas as pd
@@ -45,3 +46,22 @@ def as_list (values) -> List:
         else:
             return list(values)
     return [values]
+
+
+"""
+Returns epoch timestamp from previous date
+Parameters:
+days: number of past days to obtain epoch from
+hours: number of past hours to obtain epoch from
+"""
+def epoch_delta (days=None, hours=None):
+    delta_time = None
+    if days and hours:
+        delta_time = timedelta(days=days, hours=hours)
+    else:
+        if days:
+            delta_time = timedelta(days=days)
+        else:
+            delta_time = timedelta(hours=hours)
+    delta_date = datetime.now() - delta_time
+    return int(delta_date.timestamp())

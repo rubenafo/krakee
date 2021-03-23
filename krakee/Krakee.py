@@ -1,5 +1,6 @@
 import logging
 import logging as logger
+from datetime import datetime
 from functools import wraps
 
 import krakenex
@@ -64,6 +65,7 @@ class Krakee:
         """
     def __init__(self, authfile=None, full_caching=False):
         logging.basicConfig(level=logging.INFO)
+        self.start_time = datetime.now()
         self.cache = {}
         self.is_cached = full_caching
         if authfile:

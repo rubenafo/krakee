@@ -1,5 +1,6 @@
 import logging
 import logging as logger
+from datetime import datetime
 from functools import wraps
 
 import krakenex
@@ -64,6 +65,7 @@ class Krakee:
         """
     def __init__(self, authfile=None, full_caching=False):
         logging.basicConfig(level=logging.INFO)
+        self.start_time = datetime.now()
         self.cache = {}
         self.is_cached = full_caching
         if authfile:
@@ -176,9 +178,9 @@ class Krakee:
         assert (currency in currencies), "currency must be one of {}".format(currencies)
         df = ap.loc[:, ap.loc['quote'] == currency]
         if skip_fiat:
-            df = df[list(filter(lambda x: not x.startswith("Z"), df.columns))].columns
+            df = df[list(filter(lambda x: not x.startswith("Z"), df.columns))]
         if skip_tbtc:
-            df = df[list(filter(lambda x: not x.startswith("TBTC"), df.columns))].columns
+            df = df[list(filter(lambda x: not x.startswith("TBTC"), df.columns))]
         return df
 
     """Returns the list of currencies defined in all the asset pairs
